@@ -118,6 +118,37 @@
                             <!-- Il riepilogo verrà inserito qui dinamicamente -->
                         </div>
                         
+                        <!-- Slider per la selezione dell'intervallo di date -->
+                        <div class="mb-4" id="date-range-slider-container">
+                            <div class="d-flex align-items-center mb-3" data-bs-toggle="collapse" data-bs-target="#date-range-container" aria-expanded="true" aria-controls="date-range-container" role="button" style="cursor: pointer;">
+                                <h5 class="mb-0">Filtro Intervallo Date</h5>
+                                <i class="fas fa-chevron-down ms-auto"></i>
+                            </div>
+                            <div id="date-range-container" class="collapse show">
+                                <div class="card bg-chess-dark mb-3">
+                                    <div class="card-body">
+                                        <div class="mb-2 d-flex justify-content-between">
+                                            <span id="date-range-start" class="badge bg-secondary"></span>
+                                            <span id="date-range-end" class="badge bg-secondary"></span>
+                                        </div>
+                                        <div class="range-container">
+                                            <input type="range" class="form-range" id="date-range-start-slider" min="0" max="100" value="0">
+                                            <input type="range" class="form-range mt-2" id="date-range-end-slider" min="0" max="100" value="100">
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-1">
+                                            <small class="text-muted">Prima data</small>
+                                            <small class="text-muted">Ultima data</small>
+                                        </div>
+                                        <div class="mt-2 text-center">
+                                            <button id="reset-date-range" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-sync-alt me-1"></i>Reimposta intervallo completo
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="mb-4">
                             <h5>Andamento Elo</h5>
                             <div class="time-control-filter mb-3">

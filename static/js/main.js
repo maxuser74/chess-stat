@@ -16,6 +16,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const downloadJSONBtn = document.getElementById('download-json');
     const playerBadgeContainer = document.getElementById('player-badge-container');
     const playerBadge = document.getElementById('player-badge');
+    
+    // Variabili per la funzionalità dello slider date
+    let allGameData = []; // Contiene tutti i dati delle partite caricate
+    let dateRangeStart = 0;
+    let dateRangeEnd = 100;
+    let gameDates = [];
+    let lastHeatmapData = null; // Per memorizzare gli ultimi dati della heatmap
+    const dateRangeStartSlider = document.getElementById('date-range-start-slider');
+    const dateRangeEndSlider = document.getElementById('date-range-end-slider');
+    const dateRangeStartLabel = document.getElementById('date-range-start');
+    const dateRangeEndLabel = document.getElementById('date-range-end');
+    const resetDateRangeBtn = document.getElementById('reset-date-range');
 
     // Nasconde elementi all'avvio
     hideElement(downloadForm);
@@ -441,6 +453,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const summary = data.summary;
         const gameData = data.data;
         
+        // Salva i dati completi delle partite per usarli con lo slider delle date
+        allGameData = gameData;
+        
+        // Inizializza lo slider dell'intervallo date
+        initializeDateRangeSlider(gameData);
+        
         // Formattazione del periodo
         const period = summary.period || {};
         const monthNames = {
@@ -642,6 +660,7 @@ document.addEventListener('DOMContentLoaded', function() {
             hideElement(loadingSpinner);
             
             if (data.success) {
+                lastHeatmapData = data.heatmap_data; // Memorizza i dati della heatmap
                 renderHeatmap(data.heatmap_data);
                 
                 // Aggiungi listener per i radio button della heatmap
@@ -1170,5 +1189,85 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.month-checkbox').forEach(cb => {
             cb.checked = false;
         });
+    }
+
+    // Funzione per inizializzare lo slider dell'intervallo date
+    function initializeDateRangeSlider(gameData) {
+        // Estrai le date delle partite
+        gameDates = gameData.map(game => new Date(game.date));
+        
+        // Ordina le date in ordine crescente
+        gameDates.sort((a, b) => a - b);
+        
+        // Imposta i valori iniziali dello slider
+        dateRangeStart = 0;
+        dateRangeEnd = gameDates.length - 1;
+        
+        // Aggiorna le etichette delle date
+        updateDateRangeLabels();
+        
+        // Configura gli eventi per lo slider
+        dateRangeStartSlider.addEventListener('input', handleDateRangeChange);
+        dateRangeEndSlider.addEventListener('input', handleDateRangeChange);
+        resetDateRangeBtn.addEventListener('click', resetDateRange);
+        
+        // Imposta i valori massimi per gli slider
+        dateRangeStartSlider.max = gameDates.length - 1;
+        dateRangeEndSlider.max = gameDates.length - 1;
+        
+        // Imposta i valori iniziali per gli slider
+        dateRangeStartSlider.value = dateRangeStart;
+        dateRangeEndSlider.value = dateRangeEnd;
+    }
+
+    // Funzione per gestire il cambiamento dell'intervallo date
+    function handleDateRangeChange() {
+        // Ottieni i valori degli slider
+        const startValue = parseInt(dateRangeStartSlider.value, 10);
+        const endValue = parseInt(dateRangeEndSlider.value, 10);
+        
+        // Assicurati che l'intervallo sia valido
+        if (startValue <= endValue) {
+            dateRangeStart = startValue;
+            dateRangeEnd = endValue;
+            
+            // Aggiorna le etichette delle date
+            updateDateRangeLabels();
+            
+            // Filtra i dati delle partite in base all'intervallo selezionato
+            const filteredGameData = allGameData.slice(dateRangeStart, dateRangeEnd + 1);
+            
+            // Aggiorna i grafici con i dati filtrati
+            createEloChart(filteredGameData);
+            if (lastHeatmapData) {
+                renderHeatmap(lastHeatmapData);
+            }
+        }
+    }
+
+    // Funzione per aggiornare le etichette delle date
+    function updateDateRangeLabels() {
+        const startDate = gameDates[dateRangeStart];
+        const endDate = gameDates[dateRangeEnd];
+        
+        dateRangeStartLabel.textContent = startDate.toLocaleDateString();
+        dateRangeEndLabel.textContent = endDate.toLocaleDateString();
+    }
+
+    // Funzione per resettare l'intervallo date
+    function resetDateRange() {
+        dateRangeStart = 0;
+        dateRangeEnd = gameDates.length - 1;
+        
+        dateRangeStartSlider.value = dateRangeStart;
+        dateRangeEndSlider.value = dateRangeEnd;
+        
+        updateDateRangeLabels();
+        
+        // Aggiorna i grafici con tutti i dati
+        createEloChart(allGameData);
+        if (lastHeatmapData) {
+            renderHeatmap(lastHeatmapData);
+        }
     }
 });

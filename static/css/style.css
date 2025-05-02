@@ -509,6 +509,64 @@ table {
   height: 100% !important;
 }
 
+/* Stili per lo slider dell'intervallo date */
+.range-container {
+  position: relative;
+  padding: 0 10px;
+}
+
+.range-container input[type="range"] {
+  position: relative;
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+  z-index: 2;
+}
+
+.range-container input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--chess-green);
+  cursor: pointer;
+  margin-top: -8px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.range-container input[type="range"]::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: var(--chess-green);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 0 5px rgba(0,0,0,0.5);
+}
+
+.range-container input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.range-container input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+/* Badge con le date selezionate */
+#date-range-start, #date-range-end {
+  font-size: 1rem;
+  padding: 6px 12px;
+}
+
 /* Stili per le sezioni collassabili */
 .collapsible-header {
   cursor: pointer;
