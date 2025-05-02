@@ -478,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${game.opponent}</td>
                 <td class="${resultClass}">${resultText}</td>
                 <td>${game.time_class}</td>
-                <td>${game.variant}</td>
                 <td>
                     <a href="${game.url}" target="_blank" class="btn btn-sm btn-outline-primary">
                         Visualizza
