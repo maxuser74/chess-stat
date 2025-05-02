@@ -416,9 +416,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const summary = data.summary;
         const gameData = data.data;
         
+        // Formattazione del periodo
+        const period = summary.period || {};
+        const monthNames = {
+            "1": "Gennaio", "2": "Febbraio", "3": "Marzo", "4": "Aprile", 
+            "5": "Maggio", "6": "Giugno", "7": "Luglio", "8": "Agosto",
+            "9": "Settembre", "10": "Ottobre", "11": "Novembre", "12": "Dicembre"
+        };
+        
+        let periodText = '';
+        if (period && period.start && period.end) {
+            const [startYear, startMonth] = period.start.split('-');
+            const [endYear, endMonth] = period.end.split('-');
+            
+            const startMonthName = monthNames[startMonth] || startMonth;
+            const endMonthName = monthNames[endMonth] || endMonth;
+            
+            if (period.start === period.end) {
+                periodText = `${startMonthName} ${startYear}`;
+            } else {
+                periodText = `${startMonthName} ${startYear} - ${endMonthName} ${endYear}`;
+            }
+        }
+        
         // Popola il sommario
         resultSummary.innerHTML = `
             <p><strong>Giocatore:</strong> ${username}</p>
+            <p><strong>Periodo:</strong> ${periodText}</p>
             <p><strong>Totale partite:</strong> ${summary.total_games}</p>
             <div class="progress mb-3" style="height: 25px;">
                 <div class="progress-bar bg-chess-win" style="width: ${(summary.wins / summary.total_games * 100).toFixed(1)}%" 
@@ -452,12 +476,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
+
+        // Crea il grafico dell'andamento Elo con tutti i dati
+        createEloChart(gameData);
         
-        // Popola la tabella delle partite
+        // Aggiungi event listener ai radio button per aggiornare il grafico quando cambia la selezione
+        document.querySelectorAll('input[name="timeControl"]').forEach(radio => {
+            radio.addEventListener('change', () => createEloChart(gameData));
+        });
+        
+        // Assicurati che il radio button "rapid" sia selezionato di default
+        document.getElementById('rapid').checked = true;
+        
+        // Popola la tabella delle partite (mostra solo le prime 20 partite per prestazioni migliori)
         const tableBody = resultTable.querySelector('tbody');
         tableBody.innerHTML = '';
         
-        gameData.forEach(game => {
+        // Ottieni il riferimento all'intestazione della tabella
+        const tableHead = document.querySelector('#result-table thead tr');
+        
+        // Determina se mostrare tutte le partite o solo un sottoinsieme
+        const MAX_PREVIEW_GAMES = 20;
+        const gamesToShow = gameData.slice(0, MAX_PREVIEW_GAMES);
+        const totalGames = gameData.length;
+        
+        // Aggiungi una nota se stiamo mostrando solo un sottoinsieme delle partite
+        if (totalGames > MAX_PREVIEW_GAMES) {
+            const note = document.createElement('div');
+            note.className = 'alert alert-info mt-2';
+            note.innerHTML = `
+                <i class="fas fa-info-circle me-2"></i>
+                Mostrando le prime ${MAX_PREVIEW_GAMES} partite di ${totalGames} totali nel periodo selezionato.
+                Per vedere tutte le partite, scarica i dati completi utilizzando i pulsanti qui sopra.
+            `;
+            resultTable.parentNode.insertBefore(note, resultTable);
+        }
+        
+        gamesToShow.forEach(game => {
             const row = document.createElement('tr');
             
             const resultClass = game.result === 'win' 
@@ -486,6 +541,169 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             tableBody.appendChild(row);
+        });
+    }
+
+    // Funzione per creare il grafico dell'andamento Elo
+    function createEloChart(gameData) {
+        // Controlla se abbiamo già un grafico e lo distrugge per evitare sovrapposizioni
+        if (window.eloChart instanceof Chart) {
+            window.eloChart.destroy();
+        }
+
+        // Ottieni il canvas per il grafico
+        const ctx = document.getElementById('eloChart').getContext('2d');
+
+        // Ottieni la categoria di tempo selezionata
+        const selectedTimeControl = document.querySelector('input[name="timeControl"]:checked').value;
+        
+        // Filtra le partite in base alla categoria di tempo selezionata
+        let filteredGames = gameData;
+        if (selectedTimeControl !== 'all') {
+            filteredGames = gameData.filter(game => game.time_class === selectedTimeControl);
+            
+            // Se non ci sono partite per la categoria selezionata, mostra un messaggio
+            if (filteredGames.length === 0) {
+                // Crea un grafico vuoto con un messaggio
+                window.eloChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Nessun dato'],
+                        datasets: []
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `Nessuna partita trovata con tempo di gioco "${selectedTimeControl}" nel periodo selezionato`,
+                                color: '#e0e0e0',
+                                font: {
+                                    size: 16
+                                }
+                            }
+                        }
+                    }
+                });
+                return;
+            }
+        }
+
+        // Le partite arrivano ordinate per data decrescente (dal più recente al meno recente)
+        // Per il grafico abbiamo bisogno di ordinarle cronologicamente per data crescente
+        const sortedGames = [...filteredGames].sort((a, b) => {
+            return new Date(a.date) - new Date(b.date);
+        });
+
+        // Estrai i dati per il grafico
+        const labels = sortedGames.map(game => {
+            // Formatta la data in formato più corto per il grafico
+            const date = new Date(game.date);
+            return date.toLocaleDateString();
+        });
+
+        const ratings = sortedGames.map(game => {
+            return game.user_rating;
+        });
+
+        // Usa colori diversi per i punti in base al risultato della partita
+        const pointBackgroundColors = sortedGames.map(game => {
+            if (game.result === 'win') return '#75b175'; // Verde per le vittorie
+            if (game.result === 'loss') return '#c33'; // Rosso per le sconfitte
+            return '#3498db'; // Blu per le patte
+        });
+
+        // Determina il colore della linea del grafico in base al tempo di gioco
+        let borderColor = '#75b175'; // Default verde per rapid
+        if (selectedTimeControl === 'blitz') {
+            borderColor = '#f89e31'; // Arancione per blitz
+        } else if (selectedTimeControl === 'bullet') {
+            borderColor = '#c33'; // Rosso per bullet
+        } else if (selectedTimeControl === 'all') {
+            borderColor = '#3498db'; // Blu per tutti
+        }
+
+        // Prepara un titolo per il grafico che indica il tipo di tempo
+        let chartTitle = '';
+        if (selectedTimeControl !== 'all') {
+            chartTitle = `Andamento Elo ${selectedTimeControl.charAt(0).toUpperCase() + selectedTimeControl.slice(1)}`;
+        } else {
+            chartTitle = 'Andamento Elo (tutti i tempi di gioco)';
+        }
+
+        // Crea il grafico con Chart.js
+        window.eloChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Punteggio Elo',
+                    data: ratings,
+                    fill: false,
+                    borderColor: borderColor,
+                    tension: 0.2,
+                    pointBackgroundColor: pointBackgroundColors,
+                    pointRadius: 5,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: chartTitle,
+                        color: '#e0e0e0',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        labels: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const game = sortedGames[context.dataIndex];
+                                const result = game.result === 'win' ? 'Vittoria' : 
+                                              (game.result === 'loss' ? 'Sconfitta' : 'Patta');
+                                const color = game.user_color === 'white' ? 'Bianco' : 'Nero';
+                                return [
+                                    `Avversario: ${game.opponent}`,
+                                    `Risultato: ${result}`,
+                                    `Colore: ${color}`,
+                                    `Tempo: ${game.time_class}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
         });
     }
 

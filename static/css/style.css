@@ -493,6 +493,22 @@ table {
   z-index: 1;
 }
 
+/* Stili per il grafico Elo */
+.elo-chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+  margin-bottom: 15px;
+  background-color: var(--dark-accent);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+#eloChart {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 #result-summary > div.progress.mb-3{
     height: 40px !important;
 }

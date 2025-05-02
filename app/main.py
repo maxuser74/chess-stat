@@ -155,7 +155,7 @@ async def get_home(request: Request):
 @app.get("/api/check-username/{username}")
 async def check_username(username: str):
     exists = check_user_exists(username)
-    if exists:
+    if (exists):
         months = get_available_months(username)
         formatted_months = [(url, format_month_name(url)) for url in months]
         
@@ -188,6 +188,24 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
     selected_months_list = json.loads(selected_months)
     all_games = []
     
+    # Estrai informazioni dai mesi selezionati per il periodo di tempo
+    period_info = []
+    for month_url in selected_months_list:
+        parts = month_url.split("/")
+        year = parts[-2]
+        month = parts[-1]
+        period_info.append({"year": year, "month": month, "url": month_url})
+    
+    # Ordina per data per trovare il primo e l'ultimo mese
+    period_info.sort(key=lambda x: (int(x["year"]), int(x["month"])))
+    
+    # Prepara le informazioni sul periodo selezionato
+    period = {
+        "start": f"{period_info[0]['year']}-{period_info[0]['month']}",
+        "end": f"{period_info[-1]['year']}-{period_info[-1]['month']}",
+        "months": len(period_info)
+    }
+    
     for month_url in selected_months_list:
         try:
             response = requests.get(month_url, headers=CHESS_COM_HEADERS, timeout=10)
@@ -213,6 +231,12 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
         time_class = game.get("time_class", "")
         variant = game.get("rules", "")
         
+        # Estrai i dati Elo
+        white_rating = game.get("white", {}).get("rating", 0)
+        black_rating = game.get("black", {}).get("rating", 0)
+        user_rating = white_rating if is_white else black_rating
+        opponent_rating = black_rating if is_white else white_rating
+       
         # Determina il risultato dal punto di vista dell'utente
         result = ""
         if game.get("white", {}).get("result", "") == "win":
@@ -228,19 +252,22 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
         
         processed_game = {
             "date": date_str,
+            "timestamp": game.get("end_time", 0),  # Aggiungiamo il timestamp raw per ordinare cronologicamente
             "user_color": user_color,
             "opponent": opponent,
             "result": result,
             "time_control": time_control,
             "time_class": time_class,
             "variant": variant,
+            "user_rating": user_rating,
+            "opponent_rating": opponent_rating,
             "pgn": game.get("pgn", ""),
             "url": game.get("url", "")
         }
         processed_games.append(processed_game)
     
     # Ordina le partite per data decrescente (dal più recente al meno recente)
-    processed_games.sort(key=lambda x: x['date'], reverse=True)
+    processed_games.sort(key=lambda x: x['timestamp'], reverse=True)
 
     # Crea un DataFrame con pandas
     if processed_games:
@@ -266,10 +293,12 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
             "as_white": len(df[df["user_color"] == "white"]),
             "as_black": len(df[df["user_color"] == "black"]),
             "csv_path": csv_path,
-            "json_path": json_path
+            "json_path": json_path,
+            "period": period
         }
         
-        return {"success": True, "summary": summary, "data": processed_games[:10]}  # Ritorna solo 10 partite per anteprima
+        # Invia tutti i dati delle partite al frontend
+        return {"success": True, "summary": summary, "data": processed_games}
     else:
         return {"success": False, "error": "Nessuna partita trovata per il periodo selezionato"}
 
