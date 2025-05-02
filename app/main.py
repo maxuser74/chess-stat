@@ -239,6 +239,9 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
         }
         processed_games.append(processed_game)
     
+    # Ordina le partite per data decrescente (dal più recente al meno recente)
+    processed_games.sort(key=lambda x: x['date'], reverse=True)
+
     # Crea un DataFrame con pandas
     if processed_games:
         df = pd.DataFrame(processed_games)
