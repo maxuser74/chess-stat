@@ -469,3 +469,22 @@ table {
   background: var(--dark-accent);
   border-radius: 3px;
 }
+
+/* Stile per la tabella dei risultati con scroll verticale */
+.result-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.result-table-container table {
+  margin-bottom: 0;
+}
+
+/* Mantengo fisso l'header della tabella quando si fa scroll */
+.result-table-container thead th {
+  position: sticky;
+  top: 0;
+  background-color: var(--darker-bg);
+  z-index: 1;
+}
