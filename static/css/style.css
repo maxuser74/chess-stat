@@ -509,6 +509,24 @@ table {
   height: 100% !important;
 }
 
+/* Stili per le sezioni collassabili */
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapsible-header:hover {
+  background-color: var(--dark-bg);
+}
+
+.collapsible-header .fa-chevron-down {
+  transition: transform 0.3s ease;
+}
+
+.collapsible-header.collapsed .fa-chevron-down {
+  transform: rotate(-90deg);
+}
+
 #result-summary > div.progress.mb-3{
     height: 40px !important;
 }

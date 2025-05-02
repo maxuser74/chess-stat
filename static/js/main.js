@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
     hideElement(errorAlert);
     hideElement(playerBadgeContainer);
 
+    // Configura gli eventi per la rotazione delle icone nei collapsible di Bootstrap
+    setupCollapseIconToggle();
+
     // Event Listeners
     if (usernameForm) {
         usernameForm.addEventListener('submit', handleUsernameSubmit);
@@ -39,6 +42,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (unselectAllBtn) {
         unselectAllBtn.addEventListener('click', unselectAllMonths);
+    }
+
+    // Funzione per configurare la rotazione delle icone nei collapsible
+    function setupCollapseIconToggle() {
+        // Gestisce la rotazione dell'icona quando un collapsible cambia stato
+        document.querySelectorAll('.collapse').forEach(collapseEl => {
+            collapseEl.addEventListener('hide.bs.collapse', function () {
+                const trigger = document.querySelector(`[data-bs-target="#${this.id}"]`);
+                if (trigger) {
+                    const icon = trigger.querySelector('.fa-chevron-down');
+                    if (icon) icon.style.transform = 'rotate(-90deg)';
+                }
+            });
+            
+            collapseEl.addEventListener('show.bs.collapse', function () {
+                const trigger = document.querySelector(`[data-bs-target="#${this.id}"]`);
+                if (trigger) {
+                    const icon = trigger.querySelector('.fa-chevron-down');
+                    if (icon) icon.style.transform = 'rotate(0)';
+                }
+            });
+        });
     }
 
     // Gestione invio form username
@@ -487,6 +512,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Assicurati che il radio button "rapid" sia selezionato di default
         document.getElementById('rapid').checked = true;
+        
+        // Riattiva la gestione delle icone nei collapse dopo aver caricato nuovi contenuti
+        setupCollapseIconToggle();
         
         // Popola la tabella delle partite (mostra solo le prime 20 partite per prestazioni migliori)
         const tableBody = resultTable.querySelector('tbody');

@@ -69,33 +69,36 @@
         <div id="download-form" class="row mb-4 d-none">
             <div class="col-md-12">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#month-selection-body" aria-expanded="true" aria-controls="month-selection-body" role="button" style="cursor: pointer;">
                         <i class="fas fa-calendar-alt me-2"></i>Step 2: Seleziona i periodi da scaricare
+                        <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="card-body">
-                        <form id="download-form">
-                            <input type="hidden" id="hidden-username" value="">
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Seleziona i mesi</label>
-                                <div class="btn-group mb-3 w-100">
-                                    <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-check-square me-1"></i>Seleziona tutti
-                                    </button>
-                                    <button type="button" id="unselect-all-btn" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-square me-1"></i>Deseleziona tutti
-                                    </button>
+                    <div id="month-selection-body" class="collapse show">
+                        <div class="card-body">
+                            <form id="download-form">
+                                <input type="hidden" id="hidden-username" value="">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Seleziona i mesi</label>
+                                    <div class="btn-group mb-3 w-100">
+                                        <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-check-square me-1"></i>Seleziona tutti
+                                        </button>
+                                        <button type="button" id="unselect-all-btn" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-square me-1"></i>Deseleziona tutti
+                                        </button>
+                                    </div>
+                                    
+                                    <div id="month-selector" class="month-selector">
+                                        <!-- I mesi verranno inseriti qui dinamicamente -->
+                                    </div>
                                 </div>
                                 
-                                <div id="month-selector" class="month-selector">
-                                    <!-- I mesi verranno inseriti qui dinamicamente -->
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-download me-1"></i>Scarica partite
-                            </button>
-                        </form>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-download me-1"></i>Scarica partite
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -111,16 +114,6 @@
                     <div class="card-body">
                         <div id="result-summary" class="mb-4">
                             <!-- Il riepilogo verrà inserito qui dinamicamente -->
-                        </div>
-                        
-                        <div class="mb-4">
-                            <h5>Download dei dati</h5>
-                            <button id="download-csv" class="btn btn-primary me-2">
-                                <i class="fas fa-file-csv me-1"></i>Scarica CSV
-                            </button>
-                            <button id="download-json" class="btn btn-primary">
-                                <i class="fas fa-file-code me-1"></i>Scarica JSON
-                            </button>
                         </div>
                         
                         <div class="mb-4">
@@ -145,23 +138,30 @@
                             </div>
                         </div>
                         
-                        <h5>Anteprima delle partite</h5>
-                        <div class="result-table-container">
-                            <table id="result-table" class="table table-dark table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Colore</th>
-                                        <th>Avversario</th>
-                                        <th>Risultato</th>
-                                        <th>Tempo</th>
-                                        <th>Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Le righe della tabella verranno inserite qui dinamicamente -->
-                                </tbody>
-                            </table>
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center mb-3" data-bs-toggle="collapse" data-bs-target="#game-preview-container" aria-expanded="true" aria-controls="game-preview-container" role="button" style="cursor: pointer;">
+                                <h5 class="mb-0">Anteprima delle partite</h5>
+                                <i class="fas fa-chevron-down ms-auto" id="preview-icon"></i>
+                            </div>
+                            <div id="game-preview-container" class="collapse show">
+                                <div class="result-table-container">
+                                <table id="result-table" class="table table-dark table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Colore</th>
+                                            <th>Avversario</th>
+                                            <th>Risultato</th>
+                                            <th>Tempo</th>
+                                            <th>Link</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Le righe della tabella verranno inserite qui dinamicamente -->
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
