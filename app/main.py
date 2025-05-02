@@ -8,12 +8,17 @@ import json
 from datetime import datetime, timedelta
 import os
 from pathlib import Path
+import shutil
 
 app = FastAPI(title="Chess.com Stats Downloader")
 
 # Configurazione dei percorsi per file statici e template
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Directory per lo storage dei dati utenti
+DATA_DIR = Path("downloads/users")
+DATA_DIR.mkdir(exist_ok=True, parents=True)
 
 # Definizione degli headers standard per le richieste all'API di Chess.com
 CHESS_COM_HEADERS = {
@@ -22,6 +27,42 @@ CHESS_COM_HEADERS = {
     "Accept-Encoding": "gzip, deflate",
     "Connection": "keep-alive"
 }
+
+# Funzione per ottenere il percorso dove salvare i dati di un mese specifico
+def get_user_month_path(username, year, month):
+    month_str = str(month).zfill(2)
+    user_dir = DATA_DIR / username.lower()
+    user_dir.mkdir(exist_ok=True, parents=True)
+    return user_dir / f"{year}_{month_str}.json"
+
+# Funzione per verificare se un mese specifico esiste già localmente
+def month_exists_locally(username, year, month):
+    file_path = get_user_month_path(username, year, month)
+    return file_path.exists()
+
+# Funzione per salvare i dati di un mese specifico
+def save_month_data(username, year, month, data):
+    file_path = get_user_month_path(username, year, month)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+# Funzione per caricare i dati di un mese specifico
+def load_month_data(username, year, month):
+    file_path = get_user_month_path(username, year, month)
+    if file_path.exists():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
+
+# Funzione per ottenere l'anno e mese correnti
+def get_current_year_month():
+    now = datetime.now()
+    return now.year, now.month
+
+# Funzione per verificare se un mese è il mese corrente
+def is_current_month(year, month):
+    current_year, current_month = get_current_year_month()
+    return int(year) == current_year and int(month) == current_month
 
 # Funzione per recuperare i dettagli del profilo di un giocatore
 def get_player_profile(username):
@@ -206,14 +247,54 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
         "months": len(period_info)
     }
     
-    for month_url in selected_months_list:
-        try:
-            response = requests.get(month_url, headers=CHESS_COM_HEADERS, timeout=10)
-            if response.status_code == 200:
-                month_data = response.json()
-                all_games.extend(month_data.get("games", []))
-        except Exception as e:
-            print(f"Errore nel recupero delle partite per {month_url}: {str(e)}")
+    # Log per monitorare i mesi che verranno scaricati vs quelli dalla cache
+    cache_used = 0
+    api_requests = 0
+    
+    current_year, current_month = get_current_year_month()
+    
+    for month_info in period_info:
+        year = month_info["year"]
+        month = month_info["month"]
+        month_url = month_info["url"]
+        
+        month_games = None
+        
+        # Verifica se si tratta del mese corrente (da riscaricari sempre) o se dobbiamo usare i dati salvati
+        if is_current_month(year, month) or not month_exists_locally(username, year, month):
+            # È il mese corrente o il mese non è disponibile localmente: scarica dall'API
+            try:
+                api_requests += 1
+                response = requests.get(month_url, headers=CHESS_COM_HEADERS, timeout=10)
+                if response.status_code == 200:
+                    month_data = response.json()
+                    month_games = month_data.get("games", [])
+                    
+                    # Salva i dati per uso futuro
+                    save_month_data(username, year, month, month_data)
+                    print(f"Scaricato e salvato mese {year}/{month} per {username} dall'API")
+                else:
+                    print(f"Errore nel recupero delle partite per {month_url}: Status {response.status_code}")
+            except Exception as e:
+                print(f"Errore nel recupero delle partite per {month_url}: {str(e)}")
+        else:
+            # Il mese è disponibile localmente: carica dalla cache
+            try:
+                cache_used += 1
+                month_data = load_month_data(username, year, month)
+                if month_data:
+                    month_games = month_data.get("games", [])
+                    print(f"Caricato mese {year}/{month} per {username} dalla cache")
+                else:
+                    print(f"File cache trovato ma con errori per il mese {year}/{month}")
+            except Exception as e:
+                print(f"Errore nel caricamento della cache per {year}/{month}: {str(e)}")
+        
+        # Aggiungi le partite del mese all'elenco completo
+        if month_games:
+            all_games.extend(month_games)
+    
+    print(f"Statistiche cache per {username}: {cache_used} mesi dalla cache, {api_requests} mesi dall'API")
     
     # Creazione di un DataFrame con pandas
     processed_games = []
@@ -294,7 +375,11 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
             "as_black": len(df[df["user_color"] == "black"]),
             "csv_path": csv_path,
             "json_path": json_path,
-            "period": period
+            "period": period,
+            "cache_info": {
+                "months_from_cache": cache_used,
+                "months_from_api": api_requests
+            }
         }
         
         # Invia tutti i dati delle partite al frontend
@@ -310,14 +395,54 @@ async def get_heatmap_data(username: str = Form(...), selected_months: str = For
     selected_months_list = json.loads(selected_months)
     all_games = []
     
+    # Log per monitorare i mesi che verranno scaricati vs quelli dalla cache
+    cache_used = 0
+    api_requests = 0
+    
+    current_year, current_month = get_current_year_month()
+    
     for month_url in selected_months_list:
-        try:
-            response = requests.get(month_url, headers=CHESS_COM_HEADERS, timeout=10)
-            if response.status_code == 200:
-                month_data = response.json()
-                all_games.extend(month_data.get("games", []))
-        except Exception as e:
-            print(f"Errore nel recupero delle partite per {month_url}: {str(e)}")
+        parts = month_url.split("/")
+        year = parts[-2]
+        month = parts[-1]
+        
+        month_games = None
+        
+        # Verifica se si tratta del mese corrente o se dobbiamo usare i dati salvati
+        if is_current_month(year, month) or not month_exists_locally(username, year, month):
+            # È il mese corrente o il mese non è disponibile localmente: scarica dall'API
+            try:
+                api_requests += 1
+                response = requests.get(month_url, headers=CHESS_COM_HEADERS, timeout=10)
+                if response.status_code == 200:
+                    month_data = response.json()
+                    month_games = month_data.get("games", [])
+                    
+                    # Salva i dati per uso futuro
+                    save_month_data(username, year, month, month_data)
+                    print(f"Heatmap: Scaricato e salvato mese {year}/{month} per {username} dall'API")
+                else:
+                    print(f"Heatmap: Errore nel recupero delle partite per {month_url}: Status {response.status_code}")
+            except Exception as e:
+                print(f"Heatmap: Errore nel recupero delle partite per {month_url}: {str(e)}")
+        else:
+            # Il mese è disponibile localmente: carica dalla cache
+            try:
+                cache_used += 1
+                month_data = load_month_data(username, year, month)
+                if month_data:
+                    month_games = month_data.get("games", [])
+                    print(f"Heatmap: Caricato mese {year}/{month} per {username} dalla cache")
+                else:
+                    print(f"Heatmap: File cache trovato ma con errori per il mese {year}/{month}")
+            except Exception as e:
+                print(f"Heatmap: Errore nel caricamento della cache per {year}/{month}: {str(e)}")
+        
+        # Aggiungi le partite del mese all'elenco completo
+        if month_games:
+            all_games.extend(month_games)
+    
+    print(f"Heatmap: Statistiche cache per {username}: {cache_used} mesi dalla cache, {api_requests} mesi dall'API")
     
     # Inizializza la struttura per la heatmap
     days_of_week = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"]
@@ -383,7 +508,11 @@ async def get_heatmap_data(username: str = Form(...), selected_months: str = For
         "totals": [
             [heatmap_totals[day][hour] for hour in hours] 
             for day in days_of_week
-        ]
+        ],
+        "cache_info": {
+            "months_from_cache": cache_used,
+            "months_from_api": api_requests
+        }
     }
     
     return {"success": True, "heatmap_data": heatmap_data}

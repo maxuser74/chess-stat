@@ -464,10 +464,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
+        // Informazioni sulla cache
+        let cacheInfo = '';
+        if (summary.cache_info) {
+            const fromCache = summary.cache_info.months_from_cache || 0;
+            const fromAPI = summary.cache_info.months_from_api || 0;
+            const totalMonths = fromCache + fromAPI;
+            
+            if (totalMonths > 0) {
+                let cacheText = '';
+                
+                if (fromCache > 0 && fromAPI > 0) {
+                    cacheText = `
+                        <div class="d-flex align-items-center mt-1">
+                            <div class="badge bg-success me-1"><i class="fas fa-hdd"></i> ${fromCache} mesi dalla cache</div>
+                            <div class="badge bg-info me-1"><i class="fas fa-cloud-download-alt"></i> ${fromAPI} mesi dall'API</div>
+                        </div>
+                    `;
+                } else if (fromCache > 0) {
+                    cacheText = `
+                        <div class="d-flex align-items-center mt-1">
+                            <div class="badge bg-success me-1"><i class="fas fa-hdd"></i> Tutti i dati caricati dalla cache locale</div>
+                        </div>
+                    `;
+                } else {
+                    cacheText = `
+                        <div class="d-flex align-items-center mt-1">
+                            <div class="badge bg-info me-1"><i class="fas fa-cloud-download-alt"></i> Tutti i dati scaricati dall'API</div>
+                        </div>
+                    `;
+                }
+                
+                cacheInfo = cacheText;
+            }
+        }
+        
         // Popola il sommario
         resultSummary.innerHTML = `
             <p><strong>Giocatore:</strong> ${username}</p>
-            <p><strong>Periodo:</strong> ${periodText}</p>
+            <p>
+                <strong>Periodo:</strong> ${periodText}
+                ${cacheInfo}
+            </p>
             <p><strong>Totale partite:</strong> ${summary.total_games}</p>
             <div class="progress mb-3" style="height: 25px;">
                 <div class="progress-bar bg-chess-win" style="width: ${(summary.wins / summary.total_games * 100).toFixed(1)}%" 
