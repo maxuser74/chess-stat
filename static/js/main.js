@@ -586,6 +586,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 });
+                
+                // Rimuovi eventuali statistiche di min/max precedenti
+                const statsContainer = document.querySelector('.elo-stats-container');
+                if (statsContainer) {
+                    statsContainer.innerHTML = '';
+                }
+                
                 return;
             }
         }
@@ -596,6 +603,78 @@ document.addEventListener('DOMContentLoaded', function() {
             return new Date(a.date) - new Date(b.date);
         });
 
+        // Calcola il punteggio minimo e massimo nel periodo
+        const ratings = sortedGames.map(game => game.user_rating);
+        const maxRating = Math.max(...ratings);
+        const minRating = Math.min(...ratings);
+        
+        // Trova le date e i dettagli delle partite con punteggio massimo e minimo
+        const maxRatingGame = sortedGames.find(game => game.user_rating === maxRating);
+        const minRatingGame = sortedGames.find(game => game.user_rating === minRating);
+        
+        // Formatta le date
+        const maxRatingDate = new Date(maxRatingGame.date).toLocaleDateString();
+        const minRatingDate = new Date(minRatingGame.date).toLocaleDateString();
+        
+        // Aggiorna o crea il container per le statistiche di min/max
+        let statsContainer = document.querySelector('.elo-stats-container');
+        if (!statsContainer) {
+            statsContainer = document.createElement('div');
+            statsContainer.className = 'elo-stats-container mb-3';
+            const chartContainer = document.querySelector('.elo-chart-container');
+            chartContainer.parentNode.insertBefore(statsContainer, chartContainer);
+        }
+        
+        // Determina le classi CSS in base al tipo di tempo
+        let maxClass = 'text-success';
+        let minClass = 'text-danger';
+        let timeControlName = 'Rapid';
+        
+        if (selectedTimeControl === 'blitz') {
+            maxClass = 'text-warning';
+            timeControlName = 'Blitz';
+        } else if (selectedTimeControl === 'bullet') {
+            maxClass = 'text-danger';
+            timeControlName = 'Bullet';
+            minClass = 'text-secondary';
+        } else if (selectedTimeControl === 'all') {
+            maxClass = 'text-info';
+            timeControlName = 'tutti i tempi';
+        }
+        
+        // Crea il contenuto HTML
+        statsContainer.innerHTML = `
+        <div class="card bg-chess-dark mb-2">
+            <div class="card-body p-2">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="mb-1">Punteggio massimo (${timeControlName})</h6>
+                        <div class="d-flex align-items-center">
+                            <span class="h3 mb-0 ${maxClass}">${maxRating}</span>
+                            <span class="ms-2 small text-muted">
+                                ${maxRatingDate} - vs ${maxRatingGame.opponent}
+                                <span class="badge ${maxRatingGame.result === 'win' ? 'bg-chess-win' : maxRatingGame.result === 'loss' ? 'bg-chess-loss' : 'bg-chess-draw'} ms-1">
+                                    ${maxRatingGame.result === 'win' ? 'Vittoria' : maxRatingGame.result === 'loss' ? 'Sconfitta' : 'Patta'}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-1">Punteggio minimo (${timeControlName})</h6>
+                        <div class="d-flex align-items-center">
+                            <span class="h3 mb-0 ${minClass}">${minRating}</span>
+                            <span class="ms-2 small text-muted">
+                                ${minRatingDate} - vs ${minRatingGame.opponent}
+                                <span class="badge ${minRatingGame.result === 'win' ? 'bg-chess-win' : minRatingGame.result === 'loss' ? 'bg-chess-loss' : 'bg-chess-draw'} ms-1">
+                                    ${minRatingGame.result === 'win' ? 'Vittoria' : minRatingGame.result === 'loss' ? 'Sconfitta' : 'Patta'}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
         // Estrai i dati per il grafico
         const labels = sortedGames.map(game => {
             // Formatta la data in formato più corto per il grafico
@@ -603,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return date.toLocaleDateString();
         });
 
-        const ratings = sortedGames.map(game => {
+        const ratingValues = sortedGames.map(game => {
             return game.user_rating;
         });
 
@@ -639,7 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 labels: labels,
                 datasets: [{
                     label: 'Punteggio Elo',
-                    data: ratings,
+                    data: ratingValues,
                     fill: false,
                     borderColor: borderColor,
                     tension: 0.2,
