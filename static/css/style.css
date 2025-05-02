@@ -126,16 +126,20 @@ table {
   color: var(--text-muted) !important;
 }
 
+/* Stili per i risultati delle partite con background per garantire visibilità */
 .result-win {
-  color: var(--chess-green);
+  color: green !important;
+
 }
 
 .result-loss {
-  color: #c33;
+  color: red !important;
+
 }
 
 .result-draw {
-  color: #3498db;
+  color: white !important;
+
 }
 
 /* Chess board mini representation */
