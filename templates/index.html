@@ -23,25 +23,19 @@
 
     <!-- Contenuto principale -->
     <div class="container">
-        <!-- Introduzione -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-info-circle me-2"></i>Informazioni
-                    </div>
-                    <div class="card-body">
-                        <p>Questo strumento ti permette di scaricare i dati delle partite di qualsiasi giocatore su Chess.com usando l'API pubblica di Chess.com.</p>
-                        <p>Puoi selezionare quali periodi scaricare e ottenere i dati in formato CSV o JSON per ulteriori analisi.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Alert per errori -->
         <div id="error-alert" class="alert alert-danger d-none" role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>
             <span id="error-message"></span>
+        </div>
+
+        <!-- Badge del giocatore (inizialmente nascosto) -->
+        <div id="player-badge-container" class="row mb-4 d-none">
+            <div class="col-md-12">
+                <div id="player-badge" class="player-badge">
+                    <!-- Il contenuto del badge verrà inserito dinamicamente -->
+                </div>
+            </div>
         </div>
 
         <!-- Primo step: Inserimento username -->

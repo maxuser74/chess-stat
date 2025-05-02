@@ -14,12 +14,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultTable = document.getElementById('result-table');
     const downloadCSVBtn = document.getElementById('download-csv');
     const downloadJSONBtn = document.getElementById('download-json');
+    const playerBadgeContainer = document.getElementById('player-badge-container');
+    const playerBadge = document.getElementById('player-badge');
 
     // Nasconde elementi all'avvio
     hideElement(downloadForm);
     hideElement(resultSection);
     hideElement(loadingSpinner);
     hideElement(errorAlert);
+    hideElement(playerBadgeContainer);
 
     // Event Listeners
     if (usernameForm) {
@@ -52,12 +55,19 @@ document.addEventListener('DOMContentLoaded', function() {
         hideElement(errorAlert);
         hideElement(downloadForm);
         hideElement(resultSection);
+        hideElement(playerBadgeContainer);
         
         try {
             const response = await fetch(`/api/check-username/${username}`);
             const data = await response.json();
             
             if (data.exists) {
+                // Visualizza il badge del giocatore se abbiamo dati del profilo
+                if (data.profile) {
+                    renderPlayerBadge(data.profile, username);
+                    showElement(playerBadgeContainer);
+                }
+                
                 renderMonthSelector(data.months, username);
                 hideElement(loadingSpinner);
                 showElement(downloadForm);
@@ -70,6 +80,77 @@ document.addEventListener('DOMContentLoaded', function() {
             showError('Errore di connessione al server');
             hideElement(loadingSpinner);
         }
+    }
+
+    // Funzione per renderizzare il badge del giocatore
+    function renderPlayerBadge(profile, username) {
+        // Prepara i dati per il badge
+        const avatarUrl = profile.avatar || 'https://www.chess.com/bundles/web/images/user-image.007dad08.svg'; // Avatar di default di Chess.com
+        const title = profile.title || '';
+        const name = profile.name || '';
+        const country = profile.country ? profile.country.split('/').pop() : '';
+        const status = profile.status || '';
+        const lastOnline = profile.last_online ? new Date(profile.last_online * 1000).toLocaleDateString() : 'N/A';
+        const profileUrl = profile.url || `https://www.chess.com/member/${username}`;
+        
+        // Prepara le statistiche se disponibili
+        let ratingRapid = 'N/A';
+        let ratingBlitz = 'N/A';
+        let ratingBullet = 'N/A';
+        
+        if (profile.stats) {
+            if (profile.stats.chess_rapid) {
+                ratingRapid = profile.stats.chess_rapid.last ? profile.stats.chess_rapid.last.rating : 'N/A';
+            }
+            if (profile.stats.chess_blitz) {
+                ratingBlitz = profile.stats.chess_blitz.last ? profile.stats.chess_blitz.last.rating : 'N/A';
+            }
+            if (profile.stats.chess_bullet) {
+                ratingBullet = profile.stats.chess_bullet.last ? profile.stats.chess_bullet.last.rating : 'N/A';
+            }
+        }
+        
+        // Costruisce l'HTML del badge
+        playerBadge.innerHTML = `
+            <div class="player-badge-avatar">
+                <img src="${avatarUrl}" alt="${username}" onerror="this.src='https://www.chess.com/bundles/web/images/user-image.007dad08.svg'">
+            </div>
+            <div class="player-badge-info">
+                <div class="player-badge-username">
+                    ${title ? `<span class="player-badge-title">${title}</span>` : ''}
+                    ${username}
+                </div>
+                
+                ${name ? `<div class="player-badge-name">${name}</div>` : ''}
+                
+                <div class="player-badge-status">
+                    ${country ? `<i class="fas fa-globe me-1"></i> ${country} · ` : ''}
+                    <i class="fas fa-circle ${status === 'online' ? 'text-success' : 'text-muted'} me-1"></i> 
+                    ${status === 'online' ? 'Online' : `Ultimo accesso: ${lastOnline}`}
+                </div>
+                
+                <div class="player-badge-stats">
+                    <div class="player-badge-stat">
+                        <div class="player-badge-stat-title">Rapid</div>
+                        <div class="player-badge-stat-value">${ratingRapid}</div>
+                    </div>
+                    <div class="player-badge-stat">
+                        <div class="player-badge-stat-title">Blitz</div>
+                        <div class="player-badge-stat-value">${ratingBlitz}</div>
+                    </div>
+                    <div class="player-badge-stat">
+                        <div class="player-badge-stat-title">Bullet</div>
+                        <div class="player-badge-stat-value">${ratingBullet}</div>
+                    </div>
+                </div>
+                
+                <div class="player-badge-links">
+                    <a href="${profileUrl}" target="_blank" class="player-badge-link">
+                        <i class="fas fa-external-link-alt me-1"></i> Profilo Chess.com
+                    </a>
+                </div>
+            </div>
+        `;
     }
 
     // Gestione invio form download
