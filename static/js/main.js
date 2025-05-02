@@ -569,6 +569,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const gamesToShow = gameData.slice(0, MAX_PREVIEW_GAMES);
         const totalGames = gameData.length;
         
+        // Rimuovi eventuali note informative esistenti
+        const existingNotes = document.querySelectorAll('.alert.alert-info.mt-2');
+        existingNotes.forEach(note => note.remove());
+        
         // Aggiungi una nota se stiamo mostrando solo un sottoinsieme delle partite
         if (totalGames > MAX_PREVIEW_GAMES) {
             const note = document.createElement('div');
