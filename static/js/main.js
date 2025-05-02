@@ -131,16 +131,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 <div class="player-badge-stats">
                     <div class="player-badge-stat">
-                        <div class="player-badge-stat-title">Rapid</div>
-                        <div class="player-badge-stat-value">${ratingRapid}</div>
+                        <div class="player-badge-stat-icon rapid-icon">
+                            <i class="fas fa-hourglass-half text-white"></i>
+                        </div>
+                        <div>
+                            <div class="player-badge-stat-title">Rapid</div>
+                            <div class="player-badge-stat-value">${ratingRapid}</div>
+                        </div>
                     </div>
                     <div class="player-badge-stat">
-                        <div class="player-badge-stat-title">Blitz</div>
-                        <div class="player-badge-stat-value">${ratingBlitz}</div>
+                        <div class="player-badge-stat-icon blitz-icon">
+                            <i class="fas fa-bolt text-white"></i>
+                        </div>
+                        <div>
+                            <div class="player-badge-stat-title">Blitz</div>
+                            <div class="player-badge-stat-value">${ratingBlitz}</div>
+                        </div>
                     </div>
                     <div class="player-badge-stat">
-                        <div class="player-badge-stat-title">Bullet</div>
-                        <div class="player-badge-stat-value">${ratingBullet}</div>
+                        <div class="player-badge-stat-icon bullet-icon">
+                            <i class="fas fa-tachometer-alt text-white"></i>
+                        </div>
+                        <div>
+                            <div class="player-badge-stat-title">Bullet</div>
+                            <div class="player-badge-stat-value">${ratingBullet}</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -260,23 +275,138 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ordina mesi dal più recente al più vecchio
         months.reverse();
         
+        // Ottieni l'anno corrente
+        const currentYear = new Date().getFullYear().toString();
+        
+        // Raggruppa i mesi per anno
+        const yearGroups = {};
+        const monthNames = {
+            "1": "Gennaio", "2": "Febbraio", "3": "Marzo", "4": "Aprile", 
+            "5": "Maggio", "6": "Giugno", "7": "Luglio", "8": "Agosto",
+            "9": "Settembre", "10": "Ottobre", "11": "Novembre", "12": "Dicembre"
+        };
+        
         months.forEach((monthData, index) => {
             const [url, label] = monthData;
             
-            const checkbox = document.createElement('div');
-            checkbox.className = 'custom-control custom-checkbox';
-            checkbox.innerHTML = `
-                <input type="checkbox" class="custom-control-input month-checkbox" 
-                       id="month-${index}" value="${url}">
-                <label class="custom-control-label" for="month-${index}">${label}</label>
-            `;
-            monthSelector.appendChild(checkbox);
+            // Estrai l'anno e il mese dall'URL (formato: .../games/YYYY/MM)
+            const parts = url.split('/');
+            const year = parts[parts.length - 2];
+            const month = parts[parts.length - 1];
+            
+            if (!yearGroups[year]) {
+                yearGroups[year] = [];
+            }
+            
+            // Assicurati che il mese sia sempre una stringa
+            const monthStr = month.toString();
+            
+            // Salva i dati del mese nel gruppo dell'anno corrispondente
+            yearGroups[year].push({
+                url: url,
+                month: monthStr,
+                // Usa sempre il nome del mese dalla mappa monthNames, se non esiste usa il numero
+                monthName: monthNames[monthStr] || `Mese ${monthStr}`,
+                index: index
+            });
         });
         
-        // Seleziona il mese più recente per default
+        // Crea la struttura ad albero
+        const treeView = document.createElement('ul');
+        treeView.className = 'tree-view';
+        
+        // Ottieni gli anni in ordine decrescente
+        const years = Object.keys(yearGroups).sort((a, b) => b - a);
+        
+        years.forEach(year => {
+            const yearNode = document.createElement('li');
+            yearNode.className = 'tree-node';
+            
+            // Determina se questo anno è l'anno corrente
+            const isCurrentYear = (year === currentYear);
+            
+            const yearHeader = document.createElement('div');
+            // Se non è l'anno corrente, aggiungi la classe 'collapsed'
+            yearHeader.className = `tree-year ${isCurrentYear ? '' : 'collapsed'}`;
+            yearHeader.innerHTML = `
+                <i class="fas fa-caret-down"></i>
+                ${year}
+                <span class="year-select-all select-all-btn" data-year="${year}">Seleziona tutti</span>
+                <span class="year-select-all unselect-all-btn" data-year="${year}">Deseleziona tutti</span>
+            `;
+            
+            // Aggiungi evento di toggle per espandere/collassare
+            yearHeader.addEventListener('click', function(e) {
+                // Se il click è avvenuto sui pulsanti "seleziona/deseleziona", non fare nulla
+                // perché questi hanno i propri eventi
+                if (e.target.classList.contains('year-select-all')) {
+                    return;
+                }
+                
+                this.classList.toggle('collapsed');
+                const monthsList = this.nextElementSibling;
+                monthsList.classList.toggle('collapsed');
+            });
+            
+            yearNode.appendChild(yearHeader);
+            
+            // Crea la lista dei mesi per questo anno
+            const monthsList = document.createElement('ul');
+            // Se non è l'anno corrente, collassa la lista dei mesi
+            monthsList.className = `tree-months ${isCurrentYear ? '' : 'collapsed'}`;
+            
+            // Ordina i mesi in modo decrescente (più recenti prima)
+            yearGroups[year].sort((a, b) => b.month - a.month);
+            
+            yearGroups[year].forEach(monthData => {
+                const monthItem = document.createElement('li');
+                monthItem.className = 'month-item';
+                
+                const checkboxId = `month-${monthData.index}`;
+                
+                monthItem.innerHTML = `
+                    <input type="checkbox" class="month-checkbox" 
+                           id="${checkboxId}" value="${monthData.url}" data-year="${year}">
+                    <label for="${checkboxId}">${monthData.monthName}</label>
+                `;
+                
+                monthsList.appendChild(monthItem);
+            });
+            
+            yearNode.appendChild(monthsList);
+            treeView.appendChild(yearNode);
+        });
+        
+        monthSelector.appendChild(treeView);
+        
+        // Seleziona il mese più recente per default (primo nell'elenco)
         if (months.length > 0) {
-            document.getElementById('month-0').checked = true;
+            const firstCheckbox = monthSelector.querySelector('.month-checkbox');
+            if (firstCheckbox) {
+                firstCheckbox.checked = true;
+            }
         }
+        
+        // Aggiungi eventi per i pulsanti "seleziona tutti" e "deseleziona tutti" per anno
+        monthSelector.querySelectorAll('.select-all-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const year = this.getAttribute('data-year');
+                document.querySelectorAll(`.month-checkbox[data-year="${year}"]`).forEach(cb => {
+                    cb.checked = true;
+                });
+            });
+        });
+        
+        monthSelector.querySelectorAll('.unselect-all-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const year = this.getAttribute('data-year');
+                document.querySelectorAll(`.month-checkbox[data-year="${year}"]`).forEach(cb => {
+                    cb.checked = false;
+                });
+            });
+        });
     }
 
     // Rendering dei risultati
