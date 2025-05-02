@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess.com Stats Downloader</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+    <!-- Stile personalizzato -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-chess-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chess-knight me-2"></i>Chess.com Stats Downloader
+            </a>
+        </div>
+    </nav>
+
+    <!-- Contenuto principale -->
+    <div class="container">
+        <!-- Introduzione -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>Informazioni
+                    </div>
+                    <div class="card-body">
+                        <p>Questo strumento ti permette di scaricare i dati delle partite di qualsiasi giocatore su Chess.com usando l'API pubblica di Chess.com.</p>
+                        <p>Puoi selezionare quali periodi scaricare e ottenere i dati in formato CSV o JSON per ulteriori analisi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert per errori -->
+        <div id="error-alert" class="alert alert-danger d-none" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span id="error-message"></span>
+        </div>
+
+        <!-- Primo step: Inserimento username -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-user me-2"></i>Step 1: Cerca un giocatore di Chess.com
+                    </div>
+                    <div class="card-body">
+                        <form id="username-form">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Nome utente Chess.com</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="username" placeholder="Inserisci un nome utente di Chess.com" required>
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search me-1"></i>Cerca
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted">Esempio: MagnusCarlsen, Hikaru, etc.</small>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondo step: Selezione mesi (inizialmente nascosto) -->
+        <div id="download-form" class="row mb-4 d-none">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-calendar-alt me-2"></i>Step 2: Seleziona i periodi da scaricare
+                    </div>
+                    <div class="card-body">
+                        <form id="download-form">
+                            <input type="hidden" id="hidden-username" value="">
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Seleziona i mesi</label>
+                                <div class="btn-group mb-3 w-100">
+                                    <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-check-square me-1"></i>Seleziona tutti
+                                    </button>
+                                    <button type="button" id="unselect-all-btn" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-square me-1"></i>Deseleziona tutti
+                                    </button>
+                                </div>
+                                
+                                <div id="month-selector" class="month-selector">
+                                    <!-- I mesi verranno inseriti qui dinamicamente -->
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-download me-1"></i>Scarica partite
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terzo step: Risultati e download (inizialmente nascosto) -->
+        <div id="result-section" class="row mb-4 d-none">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-pie me-2"></i>Risultati
+                    </div>
+                    <div class="card-body">
+                        <div id="result-summary" class="mb-4">
+                            <!-- Il riepilogo verrà inserito qui dinamicamente -->
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h5>Download dei dati</h5>
+                            <button id="download-csv" class="btn btn-primary me-2">
+                                <i class="fas fa-file-csv me-1"></i>Scarica CSV
+                            </button>
+                            <button id="download-json" class="btn btn-primary">
+                                <i class="fas fa-file-code me-1"></i>Scarica JSON
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <h5>Anteprima delle partite</h5>
+                            <table id="result-table" class="table table-dark table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Colore</th>
+                                        <th>Avversario</th>
+                                        <th>Risultato</th>
+                                        <th>Tempo</th>
+                                        <th>Variante</th>
+                                        <th>Link</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Le righe della tabella verranno inserite qui dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <p class="text-muted">
+                        Questo sito utilizza l'API pubblica di Chess.com. Non è affiliato a Chess.com.
+                    </p>
+                    <p class="text-muted">
+                        <a href="https://www.chess.com/news/view/published-data-api" target="_blank" class="text-muted">
+                            Documentazione API Chess.com
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="spinner-overlay d-none">
+        <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Caricamento...</span>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle con Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Script personalizzato -->
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
