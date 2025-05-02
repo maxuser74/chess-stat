@@ -515,6 +515,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Riattiva la gestione delle icone nei collapse dopo aver caricato nuovi contenuti
         setupCollapseIconToggle();
+
+        // Carica i dati per la heatmap
+        loadHeatmapData(username);
         
         // Popola la tabella delle partite (mostra solo le prime 20 partite per prestazioni migliori)
         const tableBody = resultTable.querySelector('tbody');
@@ -569,6 +572,269 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             tableBody.appendChild(row);
+        });
+    }
+
+    // Funzione per caricare i dati della heatmap
+    async function loadHeatmapData(username) {
+        const selectedMonths = getSelectedMonths();
+        
+        if (selectedMonths.length === 0) {
+            showError('Seleziona almeno un mese per visualizzare la heatmap');
+            return;
+        }
+        
+        try {
+            showElement(loadingSpinner);
+            
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('selected_months', JSON.stringify(selectedMonths));
+            
+            const response = await fetch('/api/heatmap-data', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            hideElement(loadingSpinner);
+            
+            if (data.success) {
+                renderHeatmap(data.heatmap_data);
+                
+                // Aggiungi listener per i radio button della heatmap
+                document.querySelectorAll('input[name="heatmapResult"]').forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        renderHeatmap(data.heatmap_data, radio.value);
+                    });
+                });
+            } else {
+                showError(data.error || 'Errore nel recupero dei dati della heatmap');
+            }
+        } catch (error) {
+            console.error('Error loading heatmap data:', error);
+            showError('Errore di connessione al server durante il caricamento della heatmap');
+            hideElement(loadingSpinner);
+        }
+    }
+    
+    // Funzione per renderizzare la heatmap
+    function renderHeatmap(heatmapData, resultType = 'wins') {
+        // Controlla se abbiamo già un grafico e lo distrugge per evitare sovrapposizioni
+        if (window.heatmapChart instanceof Chart) {
+            window.heatmapChart.destroy();
+        }
+        
+        // Prepara i dati in base al tipo di risultato selezionato
+        let dataType, colorScale, titleText;
+        
+        switch (resultType) {
+            case 'wins':
+                dataType = heatmapData.wins;
+                colorScale = 'greens';
+                titleText = 'Distribuzione delle Vittorie per Giorno e Ora';
+                break;
+            case 'losses':
+                dataType = heatmapData.losses;
+                colorScale = 'reds';
+                titleText = 'Distribuzione delle Sconfitte per Giorno e Ora';
+                break;
+            case 'draws':
+                dataType = heatmapData.draws;
+                colorScale = 'blues';
+                titleText = 'Distribuzione delle Patte per Giorno e Ora';
+                break;
+            case 'total':
+            default:
+                dataType = heatmapData.totals;
+                colorScale = 'purples';
+                titleText = 'Distribuzione Totale delle Partite per Giorno e Ora';
+        }
+        
+        // Formatta le etichette delle ore
+        const hourLabels = heatmapData.hours.map(hour => {
+            return hour < 10 ? `0${hour}:00` : `${hour}:00`;
+        });
+        
+        // Plugin per aggiungere un testo sopra ogni cella della heatmap
+        const dataLabelsPlugin = {
+            id: 'dataLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (!meta.hidden) {
+                        meta.data.forEach((element, index) => {
+                            // Posizione per l'etichetta
+                            const { x, y } = element.getCenterPoint();
+                            
+                            // Valore da mostrare
+                            const value = dataset.data[index].v;
+                            
+                            // Non mostra etichette per celle vuote
+                            if (value > 0) {
+                                ctx.fillStyle = 'white';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'middle';
+                                ctx.font = 'bold 12px Arial';
+                                ctx.fillText(value, x, y);
+                            }
+                        });
+                    }
+                });
+            }
+        };
+        
+        // Ottieni il canvas per il grafico
+        const ctx = document.getElementById('heatmapChart').getContext('2d');
+        
+        // Determina i colori in base al tipo selezionato
+        let colorScheme;
+        switch (resultType) {
+            case 'wins':
+                colorScheme = [
+                    'rgba(40, 167, 69, 0.1)',
+                    'rgba(40, 167, 69, 0.3)',
+                    'rgba(40, 167, 69, 0.5)',
+                    'rgba(40, 167, 69, 0.7)',
+                    'rgba(40, 167, 69, 0.9)'
+                ];
+                break;
+            case 'losses':
+                colorScheme = [
+                    'rgba(220, 53, 69, 0.1)',
+                    'rgba(220, 53, 69, 0.3)',
+                    'rgba(220, 53, 69, 0.5)',
+                    'rgba(220, 53, 69, 0.7)',
+                    'rgba(220, 53, 69, 0.9)'
+                ];
+                break;
+            case 'draws':
+                colorScheme = [
+                    'rgba(52, 152, 219, 0.1)',
+                    'rgba(52, 152, 219, 0.3)',
+                    'rgba(52, 152, 219, 0.5)',
+                    'rgba(52, 152, 219, 0.7)',
+                    'rgba(52, 152, 219, 0.9)'
+                ];
+                break;
+            case 'total':
+            default:
+                colorScheme = [
+                    'rgba(111, 66, 193, 0.1)',
+                    'rgba(111, 66, 193, 0.3)',
+                    'rgba(111, 66, 193, 0.5)',
+                    'rgba(111, 66, 193, 0.7)',
+                    'rgba(111, 66, 193, 0.9)'
+                ];
+        }
+        
+        // Prepara i dati per la heatmap
+        const data = [];
+        for (let dayIndex = 0; dayIndex < heatmapData.days.length; dayIndex++) {
+            for (let hourIndex = 0; hourIndex < hourLabels.length; hourIndex++) {
+                data.push({
+                    x: hourLabels[hourIndex],
+                    y: heatmapData.days[dayIndex],
+                    v: dataType[dayIndex][hourIndex]
+                });
+            }
+        }
+        
+        // Trova il valore massimo per la scala dei colori
+        const maxValue = Math.max(...dataType.flat());
+        
+        // Crea il grafico della heatmap
+        window.heatmapChart = new Chart(ctx, {
+            type: 'matrix',
+            plugins: [dataLabelsPlugin],
+            data: {
+                datasets: [{
+                    label: 'Numero di partite',
+                    data: data,
+                    backgroundColor(context) {
+                        const value = context.dataset.data[context.dataIndex].v;
+                        if (value === 0) return 'rgba(0, 0, 0, 0.05)'; // Celle vuote trasparenti
+                        
+                        // Calcola l'indice colore basato sul valore
+                        const colorIndex = Math.min(
+                            Math.floor((value / maxValue) * colorScheme.length),
+                            colorScheme.length - 1
+                        );
+                        return colorScheme[colorIndex];
+                    },
+                    borderColor: 'rgba(20, 20, 20, 0.1)',
+                    borderWidth: 1,
+                    width: ({ chart }) => (chart.chartArea || {}).width / 24 - 1,
+                    height: ({ chart }) => (chart.chartArea || {}).height / 7 - 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            title() {
+                                return '';
+                            },
+                            label(context) {
+                                const v = context.dataset.data[context.dataIndex];
+                                return [
+                                    `Giorno: ${v.y}`,
+                                    `Ora: ${v.x}`,
+                                    `Partite: ${v.v}`
+                                ];
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: titleText,
+                        color: '#e0e0e0',
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'category',
+                        labels: hourLabels,
+                        offset: true,
+                        ticks: {
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Ora del Giorno',
+                            color: '#e0e0e0'
+                        }
+                    },
+                    y: {
+                        type: 'category',
+                        labels: heatmapData.days,
+                        offset: true,
+                        ticks: {
+                            color: '#e0e0e0'
+                        },
+                        grid: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Giorno della Settimana',
+                            color: '#e0e0e0'
+                        }
+                    }
+                }
+            }
         });
     }
 

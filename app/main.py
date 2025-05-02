@@ -302,6 +302,92 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
     else:
         return {"success": False, "error": "Nessuna partita trovata per il periodo selezionato"}
 
+@app.post("/api/heatmap-data")
+async def get_heatmap_data(username: str = Form(...), selected_months: str = Form(...)):
+    if not check_user_exists(username):
+        raise HTTPException(status_code=404, detail="Utente non trovato su Chess.com")
+    
+    selected_months_list = json.loads(selected_months)
+    all_games = []
+    
+    for month_url in selected_months_list:
+        try:
+            response = requests.get(month_url, headers=CHESS_COM_HEADERS, timeout=10)
+            if response.status_code == 200:
+                month_data = response.json()
+                all_games.extend(month_data.get("games", []))
+        except Exception as e:
+            print(f"Errore nel recupero delle partite per {month_url}: {str(e)}")
+    
+    # Inizializza la struttura per la heatmap
+    days_of_week = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"]
+    hours = list(range(24))  # 0-23 ore
+    
+    # Inizializza i conteggi per vittorie, sconfitte e pareggi
+    heatmap_wins = {day: {hour: 0 for hour in hours} for day in days_of_week}
+    heatmap_losses = {day: {hour: 0 for hour in hours} for day in days_of_week}
+    heatmap_draws = {day: {hour: 0 for hour in hours} for day in days_of_week}
+    
+    # Inizializza il conteggio totale di partite per calcolare le percentuali
+    heatmap_totals = {day: {hour: 0 for hour in hours} for day in days_of_week}
+    
+    # Processa i dati delle partite
+    for game in all_games:
+        white_player = game.get("white", {}).get("username", "unknown").lower()
+        black_player = game.get("black", {}).get("username", "unknown").lower()
+        
+        # Determina se il giocatore richiesto era bianco o nero
+        is_white = (username.lower() == white_player)
+        
+        # Determina il risultato dal punto di vista dell'utente
+        result = ""
+        if game.get("white", {}).get("result", "") == "win":
+            result = "win" if is_white else "loss"
+        elif game.get("black", {}).get("result", "") == "win":
+            result = "win" if not is_white else "loss"
+        else:
+            result = "draw"
+            
+        # Converte il timestamp Unix in data e ora
+        date_played = datetime.fromtimestamp(game.get("end_time", 0))
+        day_name = days_of_week[date_played.weekday()]
+        hour = date_played.hour
+        
+        # Aggiorna i contatori appropriati
+        if result == "win":
+            heatmap_wins[day_name][hour] += 1
+        elif result == "loss":
+            heatmap_losses[day_name][hour] += 1
+        else:  # draw
+            heatmap_draws[day_name][hour] += 1
+            
+        # Aggiorna il contatore totale
+        heatmap_totals[day_name][hour] += 1
+    
+    # Trasforma i dati in un formato adatto per il frontend
+    heatmap_data = {
+        "days": days_of_week,
+        "hours": hours,
+        "wins": [
+            [heatmap_wins[day][hour] for hour in hours] 
+            for day in days_of_week
+        ],
+        "losses": [
+            [heatmap_losses[day][hour] for hour in hours] 
+            for day in days_of_week
+        ],
+        "draws": [
+            [heatmap_draws[day][hour] for hour in hours] 
+            for day in days_of_week
+        ],
+        "totals": [
+            [heatmap_totals[day][hour] for hour in hours] 
+            for day in days_of_week
+        ]
+    }
+    
+    return {"success": True, "heatmap_data": heatmap_data}
+
 @app.get("/api/download-file/{file_path}")
 async def download_file(file_path: str):
     full_path = Path(f"downloads/{file_path}")
