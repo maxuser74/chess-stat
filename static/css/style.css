@@ -296,15 +296,15 @@ table {
 .player-badge-stat {
   background-color: var(--dark-accent);
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 10px 14px !important;
   min-width: 100px;
   display: flex;
   align-items: center;
 }
 
 .player-badge-stat-icon {
-  width: 24px;
-  height: 24px;
+  width: 40px !important;
+  height: 40px !important;
   margin-right: 8px;
   display: flex;
   align-items: center;
@@ -331,7 +331,7 @@ table {
 }
 
 .player-badge-stat-value {
-  font-size: 1.2rem;
+  font-size: 1.4rem !important;
   font-weight: bold;
 }
 
