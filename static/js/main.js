@@ -823,9 +823,28 @@ document.addEventListener('DOMContentLoaded', function() {
         if (element) element.classList.add('d-none');
     }
     
+    // Flag per tenere traccia dell'ultimo errore mostrato per evitare duplicazioni
+    let lastErrorShownTimestamp = 0;
+    let lastErrorMessage = '';
+    
     function showError(message) {
+        // Evita di mostrare lo stesso errore ripetutamente in un breve periodo di tempo
+        const now = Date.now();
+        if (message === lastErrorMessage && now - lastErrorShownTimestamp < 5000) {
+            return; // Ignora errori duplicati entro 5 secondi
+        }
+        
+        // Aggiorna i dati dell'ultimo errore
+        lastErrorMessage = message;
+        lastErrorShownTimestamp = now;
+        
         errorMessage.textContent = message;
         showElement(errorAlert);
+        
+        // Nascondi automaticamente l'errore dopo 5 secondi
+        setTimeout(() => {
+            hideElement(errorAlert);
+        }, 5000);
     }
     
     function getSelectedMonths() {
