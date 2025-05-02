@@ -116,9 +116,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 <img src="${avatarUrl}" alt="${username}" onerror="this.src='https://www.chess.com/bundles/web/images/user-image.007dad08.svg'">
             </div>
             <div class="player-badge-info">
-                <div class="player-badge-username">
-                    ${title ? `<span class="player-badge-title">${title}</span>` : ''}
-                    ${username}
+                <div class="player-badge-header">
+                    <div class="player-badge-username">
+                        ${title ? `<span class="player-badge-title">${title}</span>` : ''}
+                        ${username}
+                    </div>
+                    
+                    <div class="player-badge-stats">
+                        <div class="player-badge-stat">
+                            <div class="player-badge-stat-icon rapid-icon">
+                                <i class="fas fa-hourglass-half text-white"></i>
+                            </div>
+                            <div>
+                                <div class="player-badge-stat-title">Rapid</div>
+                                <div class="player-badge-stat-value">${ratingRapid}</div>
+                            </div>
+                        </div>
+                        <div class="player-badge-stat">
+                            <div class="player-badge-stat-icon blitz-icon">
+                                <i class="fas fa-bolt text-white"></i>
+                            </div>
+                            <div>
+                                <div class="player-badge-stat-title">Blitz</div>
+                                <div class="player-badge-stat-value">${ratingBlitz}</div>
+                            </div>
+                        </div>
+                        <div class="player-badge-stat">
+                            <div class="player-badge-stat-icon bullet-icon">
+                                <i class="fas fa-tachometer-alt text-white"></i>
+                            </div>
+                            <div>
+                                <div class="player-badge-stat-title">Bullet</div>
+                                <div class="player-badge-stat-value">${ratingBullet}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 ${name ? `<div class="player-badge-name">${name}</div>` : ''}
@@ -127,36 +159,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${country ? `<i class="fas fa-globe me-1"></i> ${country} · ` : ''}
                     <i class="fas fa-circle ${status === 'online' ? 'text-success' : 'text-muted'} me-1"></i> 
                     ${status === 'online' ? 'Online' : `Ultimo accesso: ${lastOnline}`}
-                </div>
-                
-                <div class="player-badge-stats">
-                    <div class="player-badge-stat">
-                        <div class="player-badge-stat-icon rapid-icon">
-                            <i class="fas fa-hourglass-half text-white"></i>
-                        </div>
-                        <div>
-                            <div class="player-badge-stat-title">Rapid</div>
-                            <div class="player-badge-stat-value">${ratingRapid}</div>
-                        </div>
-                    </div>
-                    <div class="player-badge-stat">
-                        <div class="player-badge-stat-icon blitz-icon">
-                            <i class="fas fa-bolt text-white"></i>
-                        </div>
-                        <div>
-                            <div class="player-badge-stat-title">Blitz</div>
-                            <div class="player-badge-stat-value">${ratingBlitz}</div>
-                        </div>
-                    </div>
-                    <div class="player-badge-stat">
-                        <div class="player-badge-stat-icon bullet-icon">
-                            <i class="fas fa-tachometer-alt text-white"></i>
-                        </div>
-                        <div>
-                            <div class="player-badge-stat-title">Bullet</div>
-                            <div class="player-badge-stat-value">${ratingBullet}</div>
-                        </div>
-                    </div>
                 </div>
                 
                 <div class="player-badge-links">

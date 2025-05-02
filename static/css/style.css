@@ -221,8 +221,8 @@ table {
 }
 
 .player-badge-avatar {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   background-color: var(--dark-accent);
   overflow: hidden;
@@ -242,40 +242,58 @@ table {
   min-width: 200px;
 }
 
-.player-badge-username {
-  font-size: 1.8rem;
-  font-weight: bold;
+.player-badge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 5px;
+}
+
+.player-badge-user {
+  margin-right: 15px;
+  flex: 1;
+}
+
+.player-badge-username {
+  font-size: 1.6rem;
+  font-weight: bold;
   color: var(--chess-green);
   display: flex;
   align-items: center;
+  margin-right: 15px;
 }
 
 .player-badge-title {
   font-weight: bold;
   color: #f1c40f;
   margin-right: 10px;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+}
+
+.player-badge-name {
+  font-size: 1rem;
+  margin-bottom: 2px;
 }
 
 .player-badge-status {
   margin-bottom: 10px;
   font-style: italic;
   color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .player-badge-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 10px;
+  gap: 10px;
 }
 
 .player-badge-stat {
   background-color: var(--dark-accent);
   border-radius: 6px;
-  padding: 8px 15px;
-  min-width: 120px;
+  padding: 6px 10px;
+  min-width: 100px;
   display: flex;
   align-items: center;
 }
@@ -316,7 +334,7 @@ table {
 .player-badge-links {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 5px;
 }
 
 .player-badge-link {
@@ -338,6 +356,22 @@ table {
   .player-badge-avatar {
     margin-right: 0;
     margin-bottom: 15px;
+  }
+  
+  .player-badge-header {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .player-badge-user {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  
+  .player-badge-username {
+    margin-right: 0;
+    margin-bottom: 10px;
+    justify-content: center;
   }
   
   .player-badge-stats {
