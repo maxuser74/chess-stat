@@ -1193,11 +1193,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funzione per inizializzare lo slider dell'intervallo date
     function initializeDateRangeSlider(gameData) {
-        // Estrai le date delle partite
-        gameDates = gameData.map(game => new Date(game.date));
+        // Crea una copia delle partite e le ordina cronologicamente
+        const sortedGames = [...gameData].sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        // Ordina le date in ordine crescente
-        gameDates.sort((a, b) => a - b);
+        // Estrai le date delle partite
+        gameDates = sortedGames.map(game => new Date(game.date));
+        
+        // Salva i dati ordinati per data per uso futuro
+        window.sortedGameData = sortedGames;
+        
+        if (gameDates.length === 0) return; // Se non ci sono partite, esci
         
         // Imposta i valori iniziali dello slider
         dateRangeStart = 0;
@@ -1206,9 +1211,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // Aggiorna le etichette delle date
         updateDateRangeLabels();
         
+        // Rimuovi event listener precedenti per evitare duplicazioni
+        dateRangeStartSlider.removeEventListener('input', handleDateRangeStartInput);
+        dateRangeStartSlider.removeEventListener('change', handleDateRangeChange);
+        dateRangeEndSlider.removeEventListener('input', handleDateRangeEndInput);
+        dateRangeEndSlider.removeEventListener('change', handleDateRangeChange);
+        resetDateRangeBtn.removeEventListener('click', resetDateRange);
+        
         // Configura gli eventi per lo slider
-        dateRangeStartSlider.addEventListener('input', handleDateRangeChange);
-        dateRangeEndSlider.addEventListener('input', handleDateRangeChange);
+        // 'input' per aggiornare in tempo reale le etichette (ma non i grafici)
+        dateRangeStartSlider.addEventListener('input', handleDateRangeStartInput);
+        dateRangeEndSlider.addEventListener('input', handleDateRangeEndInput);
+        
+        // 'change' per aggiornare i grafici solo quando il trascinamento è completo
+        dateRangeStartSlider.addEventListener('change', handleDateRangeChange);
+        dateRangeEndSlider.addEventListener('change', handleDateRangeChange);
         resetDateRangeBtn.addEventListener('click', resetDateRange);
         
         // Imposta i valori massimi per gli slider
@@ -1220,26 +1237,68 @@ document.addEventListener('DOMContentLoaded', function() {
         dateRangeEndSlider.value = dateRangeEnd;
     }
 
-    // Funzione per gestire il cambiamento dell'intervallo date
-    function handleDateRangeChange() {
-        // Ottieni i valori degli slider
+    // Funzione per gestire l'input durante il trascinamento dello slider iniziale
+    function handleDateRangeStartInput() {
         const startValue = parseInt(dateRangeStartSlider.value, 10);
         const endValue = parseInt(dateRangeEndSlider.value, 10);
         
-        // Assicurati che l'intervallo sia valido
-        if (startValue <= endValue) {
+        // Assicurati che l'inizio non superi la fine
+        if (startValue > endValue) {
+            dateRangeStartSlider.value = endValue;
+            dateRangeStart = endValue;
+        } else {
             dateRangeStart = startValue;
+        }
+        
+        // Aggiorna solo le etichette durante il trascinamento
+        updateDateRangeLabels();
+    }
+
+    // Funzione per gestire l'input durante il trascinamento dello slider finale
+    function handleDateRangeEndInput() {
+        const startValue = parseInt(dateRangeStartSlider.value, 10);
+        const endValue = parseInt(dateRangeEndSlider.value, 10);
+        
+        // Assicurati che la fine non sia inferiore all'inizio
+        if (endValue < startValue) {
+            dateRangeEndSlider.value = startValue;
+            dateRangeEnd = startValue;
+        } else {
             dateRangeEnd = endValue;
+        }
+        
+        // Aggiorna solo le etichette durante il trascinamento
+        updateDateRangeLabels();
+    }
+
+    // Funzione per gestire il cambiamento dell'intervallo date (al rilascio dello slider)
+    function handleDateRangeChange() {
+        // Ottieni i valori correnti degli slider
+        const startValue = parseInt(dateRangeStartSlider.value, 10);
+        const endValue = parseInt(dateRangeEndSlider.value, 10);
+        
+        if (startValue <= endValue && window.sortedGameData) {
+            // Usa le date effettive per filtrare i dati
+            const startDate = gameDates[startValue];
+            const endDate = gameDates[endValue];
             
-            // Aggiorna le etichette delle date
-            updateDateRangeLabels();
+            // Aggiorna le etichette
+            dateRangeStartLabel.textContent = startDate.toLocaleDateString();
+            dateRangeEndLabel.textContent = endDate.toLocaleDateString();
             
-            // Filtra i dati delle partite in base all'intervallo selezionato
-            const filteredGameData = allGameData.slice(dateRangeStart, dateRangeEnd + 1);
+            // Filtra le partite in base alle date effettive
+            const filteredGameData = allGameData.filter(game => {
+                const gameDate = new Date(game.date);
+                return gameDate >= startDate && gameDate <= endDate;
+            });
             
             // Aggiorna i grafici con i dati filtrati
             createEloChart(filteredGameData);
+            
+            // Aggiorna la heatmap se disponibile
             if (lastHeatmapData) {
+                // Filtra i dati della heatmap in base alle date selezionate
+                // Questo è un esempio, potrebbe essere necessario adattare in base al formato dei dati
                 renderHeatmap(lastHeatmapData);
             }
         }
@@ -1247,15 +1306,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Funzione per aggiornare le etichette delle date
     function updateDateRangeLabels() {
+        if (gameDates.length === 0) return;
+        
         const startDate = gameDates[dateRangeStart];
         const endDate = gameDates[dateRangeEnd];
         
-        dateRangeStartLabel.textContent = startDate.toLocaleDateString();
-        dateRangeEndLabel.textContent = endDate.toLocaleDateString();
+        if (startDate && endDate) {
+            dateRangeStartLabel.textContent = startDate.toLocaleDateString();
+            dateRangeEndLabel.textContent = endDate.toLocaleDateString();
+        }
     }
 
     // Funzione per resettare l'intervallo date
     function resetDateRange() {
+        if (gameDates.length === 0) return;
+        
         dateRangeStart = 0;
         dateRangeEnd = gameDates.length - 1;
         
