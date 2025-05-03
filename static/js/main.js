@@ -322,7 +322,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const monthNames = {
             "1": "Gennaio", "2": "Febbraio", "3": "Marzo", "4": "Aprile", 
             "5": "Maggio", "6": "Giugno", "7": "Luglio", "8": "Agosto",
-            "9": "Settembre", "10": "Ottobre", "11": "Novembre", "12": "Dicembre"
+            "9": "Settembre", "10": "Ottobre", "11": "Novembre", "12": "Dicembre",
+            // Aggiungiamo anche le versioni con zero iniziale
+            "01": "Gennaio", "02": "Febbraio", "03": "Marzo", "04": "Aprile", 
+            "05": "Maggio", "06": "Giugno", "07": "Luglio", "08": "Agosto",
+            "09": "Settembre"
         };
         
         months.forEach((monthData, index) => {
@@ -344,8 +348,8 @@ document.addEventListener('DOMContentLoaded', function() {
             yearGroups[year].push({
                 url: url,
                 month: monthStr,
-                // Usa sempre il nome del mese dalla mappa monthNames, se non esiste usa il numero
-                monthName: monthNames[monthStr] || `Mese ${monthStr}`,
+                // Usa il nome del mese, fallback sul valore numerico se non esiste nella mappa
+                monthName: monthNames[monthStr] || monthStr,
                 index: index
             });
         });

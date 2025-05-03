@@ -28,6 +28,28 @@ CHESS_COM_HEADERS = {
     "Connection": "keep-alive"
 }
 
+# Funzione per ottenere il nome del mese in italiano
+def get_month_name(month):
+    month_names = {
+        "1": "Gennaio", "2": "Febbraio", "3": "Marzo", "4": "Aprile", 
+        "5": "Maggio", "6": "Giugno", "7": "Luglio", "8": "Agosto",
+        "9": "Settembre", "10": "Ottobre", "11": "Novembre", "12": "Dicembre",
+        # Per supportare anche i valori con zero iniziale
+        "01": "Gennaio", "02": "Febbraio", "03": "Marzo", "04": "Aprile", 
+        "05": "Maggio", "06": "Giugno", "07": "Luglio", "08": "Agosto",
+        "09": "Settembre"
+    }
+    return month_names.get(str(month), str(month))
+
+# Funzione per ottenere la rappresentazione numerica del mese dal nome
+def get_month_number(month_name):
+    month_numbers = {
+        "Gennaio": "01", "Febbraio": "02", "Marzo": "03", "Aprile": "04", 
+        "Maggio": "05", "Giugno": "06", "Luglio": "07", "Agosto": "08",
+        "Settembre": "09", "Ottobre": "10", "Novembre": "11", "Dicembre": "12"
+    }
+    return month_numbers.get(month_name, "01")
+
 # Funzione per ottenere il percorso dove salvare i dati di un mese specifico
 def get_user_month_path(username, year, month):
     month_str = str(month).zfill(2)
@@ -181,13 +203,7 @@ def format_month_name(archive_url):
     year = parts[-2]
     month = parts[-1]
     
-    month_names = {
-        "1": "Gennaio", "2": "Febbraio", "3": "Marzo", "4": "Aprile", 
-        "5": "Maggio", "6": "Giugno", "7": "Luglio", "8": "Agosto",
-        "9": "Settembre", "10": "Ottobre", "11": "Novembre", "12": "Dicembre"
-    }
-    
-    return f"{month_names.get(month, month)} {year}"
+    return f"{get_month_name(month)} {year}"
 
 @app.get("/", response_class=HTMLResponse)
 async def get_home(request: Request):
@@ -242,8 +258,8 @@ async def download_games(username: str = Form(...), selected_months: str = Form(
     
     # Prepara le informazioni sul periodo selezionato
     period = {
-        "start": f"{period_info[0]['year']}-{period_info[0]['month']}",
-        "end": f"{period_info[-1]['year']}-{period_info[-1]['month']}",
+        "start": f"{period_info[0]['year']}-{get_month_name(period_info[0]['month'])}",
+        "end": f"{period_info[-1]['year']}-{get_month_name(period_info[-1]['month'])}",
         "months": len(period_info)
     }
     
