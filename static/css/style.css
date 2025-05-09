@@ -404,6 +404,132 @@ table {
   color: var(--chess-green);
   display: flex;
   align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: var(--darker-bg);
+}
+
+.tree-year:hover {
+  opacity: 0.9;
+}
+
+.tree-year i {
+  margin-right: 8px;
+  transition: transform 0.2s;
+  width: 14px;
+  text-align: center;
+}
+
+.tree-year.collapsed i.fa-caret-down {
+  transform: rotate(-90deg);
+}
+
+.tree-months {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--dark-accent);
+  transition: all 0.3s ease;
+}
+
+.tree-months.collapsed {
+  display: none;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 576px) {
+  .month-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .month-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+.month-item {
+  text-align: center;
+}
+
+.month-box {
+  padding: 5px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.month-box.active {
+  background-color: var(--dark-bg);
+  border: 1px solid var(--border-color);
+}
+
+.month-box.active:hover {
+  background-color: var(--chess-green);
+  border-color: var(--chess-green);
+  color: white;
+}
+
+.month-box.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-muted);
+}
+
+.month-checkbox {
+  margin: 0 0 5px 0;
+}
+
+.month-item label {
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85rem;
+}
+
+.year-select-all {
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-left: 10px;
+  color: var(--text-muted);
+}
+
+.year-select-all:hover {
+  color: var(--text-light);
+  text-decoration: underline;
+}
+
+/* Stili per l'albero dei mesi */
+.tree-view {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.tree-view ul {
+  list-style-type: none;
+  padding-left: 25px;
+}
+
+.tree-node {
+  margin: 8px 0;
+}
+
+.tree-year {
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--chess-green);
+  display: flex;
+  align-items: center;
 }
 
 .tree-year:hover {

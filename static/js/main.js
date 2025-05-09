@@ -301,24 +301,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Rendering del selettore dei mesi
+    // Rendering del selettore dei periodi
     function renderMonthSelector(months, username) {
-        monthSelector.innerHTML = '';
+        const startPeriodSelect = document.getElementById('start-period');
+        const endPeriodSelect = document.getElementById('end-period');
         document.getElementById('hidden-username').value = username;
         
+        // Pulisci i dropdown
+        startPeriodSelect.innerHTML = '';
+        endPeriodSelect.innerHTML = '';
+        
         if (months.length === 0) {
-            monthSelector.innerHTML = '<p class="text-muted">Nessun dato disponibile per questo utente</p>';
+            const noDataMessage = document.createElement('div');
+            noDataMessage.className = 'text-muted';
+            noDataMessage.textContent = 'Nessun dato disponibile per questo utente';
+            startPeriodSelect.parentNode.appendChild(noDataMessage);
             return;
         }
         
-        // Ordina mesi dal più recente al più vecchio
-        months.reverse();
+        // Ordina mesi dal più vecchio al più recente per mostrare opzioni in ordine cronologico
+        months.sort(); // Questo funziona perché gli URL hanno formato .../games/YYYY/MM
         
-        // Ottieni l'anno corrente
-        const currentYear = new Date().getFullYear().toString();
-        
-        // Raggruppa i mesi per anno
-        const yearGroups = {};
+        // Estrai e formatta le informazioni sui mesi disponibili
+        const formattedMonths = [];
         const monthNames = {
             "1": "Gennaio", "2": "Febbraio", "3": "Marzo", "4": "Aprile", 
             "5": "Maggio", "6": "Giugno", "7": "Luglio", "8": "Agosto",
@@ -329,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             "09": "Settembre"
         };
         
-        months.forEach((monthData, index) => {
+        months.forEach((monthData) => {
             const [url, label] = monthData;
             
             // Estrai l'anno e il mese dall'URL (formato: .../games/YYYY/MM)
@@ -337,119 +342,107 @@ document.addEventListener('DOMContentLoaded', function() {
             const year = parts[parts.length - 2];
             const month = parts[parts.length - 1];
             
-            if (!yearGroups[year]) {
-                yearGroups[year] = [];
-            }
-            
             // Assicurati che il mese sia sempre una stringa
             const monthStr = month.toString();
             
-            // Salva i dati del mese nel gruppo dell'anno corrispondente
-            yearGroups[year].push({
+            // Salva i dati del mese
+            formattedMonths.push({
                 url: url,
                 month: monthStr,
+                year: year,
                 // Usa il nome del mese, fallback sul valore numerico se non esiste nella mappa
                 monthName: monthNames[monthStr] || monthStr,
-                index: index
+                // Formatta il testo visualizzato nell'opzione
+                displayText: `${monthNames[monthStr] || monthStr} ${year}`
             });
         });
         
-        // Crea la struttura ad albero
-        const treeView = document.createElement('ul');
-        treeView.className = 'tree-view';
+        // Trova il mese corrente (maggio 2025) per impostarlo come default
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear().toString();
+        const currentMonth = (currentDate.getMonth() + 1).toString(); // getMonth() è zero-based
         
-        // Ottieni gli anni in ordine decrescente
-        const years = Object.keys(yearGroups).sort((a, b) => b - a);
+        let defaultStartIndex = 0;
+        let defaultEndIndex = formattedMonths.length - 1; // L'ultimo mese disponibile
+        let currentMonthIndex = -1;
         
-        years.forEach(year => {
-            const yearNode = document.createElement('li');
-            yearNode.className = 'tree-node';
-            
-            // Determina se questo anno è l'anno corrente
-            const isCurrentYear = (year === currentYear);
-            
-            const yearHeader = document.createElement('div');
-            // Se non è l'anno corrente, aggiungi la classe 'collapsed'
-            yearHeader.className = `tree-year ${isCurrentYear ? '' : 'collapsed'}`;
-            yearHeader.innerHTML = `
-                <i class="fas fa-caret-down"></i>
-                ${year}
-                <span class="year-select-all select-all-btn" data-year="${year}">Seleziona tutti</span>
-                <span class="year-select-all unselect-all-btn" data-year="${year}">Deseleziona tutti</span>
-            `;
-            
-            // Aggiungi evento di toggle per espandere/collassare
-            yearHeader.addEventListener('click', function(e) {
-                // Se il click è avvenuto sui pulsanti "seleziona/deseleziona", non fare nulla
-                // perché questi hanno i propri eventi
-                if (e.target.classList.contains('year-select-all')) {
-                    return;
-                }
-                
-                this.classList.toggle('collapsed');
-                const monthsList = this.nextElementSibling;
-                monthsList.classList.toggle('collapsed');
-            });
-            
-            yearNode.appendChild(yearHeader);
-            
-            // Crea la lista dei mesi per questo anno
-            const monthsList = document.createElement('ul');
-            // Se non è l'anno corrente, collassa la lista dei mesi
-            monthsList.className = `tree-months ${isCurrentYear ? '' : 'collapsed'}`;
-            
-            // Ordina i mesi in modo decrescente (più recenti prima)
-            yearGroups[year].sort((a, b) => b.month - a.month);
-            
-            yearGroups[year].forEach(monthData => {
-                const monthItem = document.createElement('li');
-                monthItem.className = 'month-item';
-                
-                const checkboxId = `month-${monthData.index}`;
-                
-                monthItem.innerHTML = `
-                    <input type="checkbox" class="month-checkbox" 
-                           id="${checkboxId}" value="${monthData.url}" data-year="${year}">
-                    <label for="${checkboxId}">${monthData.monthName}</label>
-                `;
-                
-                monthsList.appendChild(monthItem);
-            });
-            
-            yearNode.appendChild(monthsList);
-            treeView.appendChild(yearNode);
-        });
-        
-        monthSelector.appendChild(treeView);
-        
-        // Seleziona il mese più recente per default (primo nell'elenco)
-        if (months.length > 0) {
-            const firstCheckbox = monthSelector.querySelector('.month-checkbox');
-            if (firstCheckbox) {
-                firstCheckbox.checked = true;
+        formattedMonths.forEach((monthData, index) => {
+            if (monthData.year === currentYear && monthData.month === currentMonth) {
+                currentMonthIndex = index;
             }
+        });
+        
+        // Se il mese corrente è disponibile, imposta entrambi i dropdown su di esso
+        if (currentMonthIndex !== -1) {
+            defaultStartIndex = currentMonthIndex;
+            defaultEndIndex = currentMonthIndex;
         }
         
-        // Aggiungi eventi per i pulsanti "seleziona tutti" e "deseleziona tutti" per anno
-        monthSelector.querySelectorAll('.select-all-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const year = this.getAttribute('data-year');
-                document.querySelectorAll(`.month-checkbox[data-year="${year}"]`).forEach(cb => {
-                    cb.checked = true;
-                });
-            });
+        // Popola le opzioni dei dropdown
+        formattedMonths.forEach((monthData, index) => {
+            const startOption = document.createElement('option');
+            startOption.value = monthData.url;
+            startOption.textContent = monthData.displayText;
+            startOption.selected = index === defaultStartIndex;
+            startPeriodSelect.appendChild(startOption);
+            
+            const endOption = document.createElement('option');
+            endOption.value = monthData.url;
+            endOption.textContent = monthData.displayText;
+            endOption.selected = index === defaultEndIndex;
+            endPeriodSelect.appendChild(endOption);
         });
         
-        monthSelector.querySelectorAll('.unselect-all-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const year = this.getAttribute('data-year');
-                document.querySelectorAll(`.month-checkbox[data-year="${year}"]`).forEach(cb => {
-                    cb.checked = false;
-                });
+        // Aggiungi evento change al dropdown iniziale per assicurarsi che
+        // il periodo finale non sia precedente al periodo iniziale
+        startPeriodSelect.addEventListener('change', function() {
+            const startIdx = Array.from(startPeriodSelect.options).findIndex(
+                opt => opt.value === startPeriodSelect.value
+            );
+            
+            // Assicurati che il periodo finale non sia precedente a quello iniziale
+            Array.from(endPeriodSelect.options).forEach((option, idx) => {
+                if (idx < startIdx) {
+                    option.disabled = true;
+                } else {
+                    option.disabled = false;
+                }
             });
+            
+            // Se il periodo finale selezionato è ora disabilitato, seleziona il primo disponibile
+            if (Array.from(endPeriodSelect.options).findIndex(
+                opt => opt.value === endPeriodSelect.value
+            ) < startIdx) {
+                endPeriodSelect.selectedIndex = startIdx;
+            }
         });
+        
+        // Aggiungi evento change al dropdown finale per assicurarsi che
+        // il periodo iniziale non sia successivo al periodo finale
+        endPeriodSelect.addEventListener('change', function() {
+            const endIdx = Array.from(endPeriodSelect.options).findIndex(
+                opt => opt.value === endPeriodSelect.value
+            );
+            
+            // Assicurati che il periodo iniziale non sia successivo a quello finale
+            Array.from(startPeriodSelect.options).forEach((option, idx) => {
+                if (idx > endIdx) {
+                    option.disabled = true;
+                } else {
+                    option.disabled = false;
+                }
+            });
+            
+            // Se il periodo iniziale selezionato è ora disabilitato, seleziona l'ultimo disponibile
+            if (Array.from(startPeriodSelect.options).findIndex(
+                opt => opt.value === startPeriodSelect.value
+            ) > endIdx) {
+                startPeriodSelect.selectedIndex = endIdx;
+            }
+        });
+        
+        // Attiva gli eventi una volta per impostare correttamente le opzioni disabilitate all'inizio
+        startPeriodSelect.dispatchEvent(new Event('change'));
     }
 
     // Rendering dei risultati
@@ -1179,8 +1172,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getSelectedMonths() {
-        const checkboxes = document.querySelectorAll('.month-checkbox:checked');
-        return Array.from(checkboxes).map(cb => cb.value);
+        const startPeriod = document.getElementById('start-period');
+        const endPeriod = document.getElementById('end-period');
+        
+        // Se non ci sono periodi selezionati, restituisci un array vuoto
+        if (!startPeriod || !endPeriod || !startPeriod.value || !endPeriod.value) {
+            return [];
+        }
+        
+        // Trova gli indici dei periodi selezionati
+        const startIndex = Array.from(startPeriod.options).findIndex(
+            opt => opt.value === startPeriod.value
+        );
+        const endIndex = Array.from(endPeriod.options).findIndex(
+            opt => opt.value === endPeriod.value
+        );
+        
+        // Ottieni tutti i valori URL dei mesi disponibili dal dropdown
+        const allMonths = Array.from(startPeriod.options).map(opt => opt.value);
+        
+        // Restituisci i mesi nell'intervallo selezionato (inclusivo)
+        return allMonths.slice(startIndex, endIndex + 1);
     }
     
     function selectAllMonths() {

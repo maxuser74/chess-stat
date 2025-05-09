@@ -81,18 +81,26 @@
                                 <input type="hidden" id="hidden-username" value="">
                                 
                                 <div class="mb-3">
-                                    <label class="form-label">Seleziona i mesi</label>
-                                    <div class="btn-group mb-3 w-100">
-                                        <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-check-square me-1"></i>Seleziona tutti
-                                        </button>
-                                        <button type="button" id="unselect-all-btn" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-square me-1"></i>Deseleziona tutti
-                                        </button>
+                                    <label class="form-label">Seleziona il periodo</label>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="start-period" class="form-label">Periodo iniziale</label>
+                                            <select id="start-period" class="form-select" aria-label="Seleziona periodo iniziale">
+                                                <!-- Le opzioni verranno inserite dinamicamente -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="end-period" class="form-label">Periodo finale</label>
+                                            <select id="end-period" class="form-select" aria-label="Seleziona periodo finale">
+                                                <!-- Le opzioni verranno inserite dinamicamente -->
+                                            </select>
+                                        </div>
                                     </div>
                                     
-                                    <div id="month-selector" class="month-selector">
-                                        <!-- I mesi verranno inseriti qui dinamicamente -->
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Verranno scaricate tutte le partite nell'intervallo selezionato
                                     </div>
                                 </div>
                                 
